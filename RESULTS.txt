@@ -1,0 +1,39 @@
+:::::::::: Test with repeatTimes = 1000000 ::::::::::
+jni: mean = 159.504006 ns, stddev = 63.935908517471866 ns
+nio: mean = 155.059153 ns, stddev = 3983.4819983968187 ns
+
+:::::::::: Test with repeatTimes = 2000000 ::::::::::
+jni: mean = 241.130249 ns, stddev = 6402.060824267416 ns
+nio: mean = 137.327012 ns, stddev = 48.907227494152 ns
+
+:::::::::: Test with repeatTimes = 3000000 ::::::::::
+jni: mean = 196.97307866666668 ns, stddev = 69.68470894001847 ns
+nio: mean = 147.01646233333332 ns, stddev = 6626.830065002315 ns
+
+:::::::::: Test with repeatTimes = 4000000 ::::::::::
+jni: mean = 162.60660675 ns, stddev = 133.8488622871727 ns
+nio: mean = 141.8454825 ns, stddev = 40.45081678837185 ns
+
+:::::::::: Test with repeatTimes = 5000000 ::::::::::
+jni: mean = 164.7768702 ns, stddev = 139.67341987200308 ns
+nio: mean = 147.9707082 ns, stddev = 11031.05756387414 ns
+
+:::::::::: Test with repeatTimes = 6000000 ::::::::::
+jni: mean = 162.022499 ns, stddev = 90.85782793696701 ns
+nio: mean = 144.38754833333334 ns, stddev = 16495.772733536996 ns
+
+:::::::::: Test with repeatTimes = 7000000 ::::::::::
+jni: mean = 243.29936828571428 ns, stddev = 43.73040878641968 ns
+nio: mean = 151.82090171428572 ns, stddev = 222.79405974767198 ns
+
+:::::::::: Test with repeatTimes = 8000000 ::::::::::
+jni: mean = 271.135417375 ns, stddev = 52.278489946179384 ns
+nio: mean = 144.656668375 ns, stddev = 23113.72067630458 ns
+
+:::::::::: Test with repeatTimes = 9000000 ::::::::::
+jni: mean = 209.06557566666666 ns, stddev = 8483.40388600163 ns
+nio: mean = 142.2127758888889 ns, stddev = 514.4645767998402 ns
+
+:::::::::: Test with repeatTimes = 10000000 ::::::::::
+jni: mean = 272.4700969 ns, stddev = 388.881030026799 ns
+nio: mean = 142.3960441 ns, stddev = 38.455295813395765 ns

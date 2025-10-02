@@ -8,9 +8,9 @@ import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.random.Random
 
 fun main() {
+    RustLibrary.initJni()
     // Warming up
     test(10)
     for (repeatTimes in 1_000_000..10_000_000 step 1_000_000) {
@@ -20,19 +20,24 @@ fun main() {
 
 fun test(repeatTimes: Int) {
     println(":::::::::: Test with repeatTimes = $repeatTimes ::::::::::")
-    val aFirst = Random.nextInt()
-    val aSecond = Random.nextDouble()
-    val bFirst = Random.nextInt()
-    val bSecond = Random.nextDouble()
+    val struct1 = TheStruct.random()
+    val struct2 = TheStruct.random()
+    val struct3 = TheStruct.random()
+    val struct4 = TheStruct.random()
 
-    val groundTruth = aSecond.pow(aFirst) + bSecond.pow(bFirst)
+    val groundTruth = (
+        struct1.second.pow(struct1.first) +
+        struct2.second.pow(struct2.first) +
+        struct3.second.pow(struct3.first) +
+        struct4.second.pow(struct4.first)
+    )
     testUsing("jni", repeatTimes, groundTruth) {
-        RustLibrary.testUsingJni(aFirst, aSecond, bFirst, bSecond)
+        RustLibrary.testUsingJni(struct1, struct2, struct3, struct4)
     }
-    val buffer = ByteBuffer.allocateDirect(32)
+    val buffer = ByteBuffer.allocateDirect(64)
     buffer.order(ByteOrder.LITTLE_ENDIAN)
     testUsing("nio", repeatTimes, groundTruth) {
-        RustLibrary.testUsingNio(buffer, aFirst, aSecond, bFirst, bSecond)
+        RustLibrary.testUsingNio(buffer, struct1, struct2, struct3, struct4)
     }
     println()
 }
@@ -44,9 +49,8 @@ fun testUsing(testFnName: String, repeatTimes: Int, groundTruth: Double, testFn:
         val startTime = Clock.System.now()
         val result = testFn()
         val endTime = Clock.System.now()
-
         if((abs(groundTruth - result) / groundTruth) > 0.00001) {
-            throw RuntimeException("groundTruth != result ($groundTruth, $result, ${groundTruth-result})")
+             throw RuntimeException("groundTruth != result ($groundTruth, $result, ${groundTruth-result})")
         }
         elapsedTimeList[it] = endTime - startTime
     }
