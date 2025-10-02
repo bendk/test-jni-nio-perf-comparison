@@ -1,17 +1,3 @@
-# Performance comparision between passing struct arguments through JNI vs a NIO buffer
-
-NIO performs better on my machine.
-
-The Java code writes struct data to the memory buffer in the Rust layout.  We should be able to know
-this layout at codegen time because there are stdlib function that will give it to us.
-
-I think a large part of this is that Rust is optimizing out the `clone()` call.
-We can maybe build this in to UniFFI by supporting passing references directly to the memory
-buffer.
-
-On my machine:
-
-```
 :::::::::: Test with repeatTimes = 1000000 ::::::::::
 jni: mean = 159.504006 ns, stddev = 63.935908517471866 ns
 nio: mean = 155.059153 ns, stddev = 3983.4819983968187 ns
@@ -51,5 +37,3 @@ nio: mean = 142.2127758888889 ns, stddev = 514.4645767998402 ns
 :::::::::: Test with repeatTimes = 10000000 ::::::::::
 jni: mean = 272.4700969 ns, stddev = 388.881030026799 ns
 nio: mean = 142.3960441 ns, stddev = 38.455295813395765 ns
-```
-

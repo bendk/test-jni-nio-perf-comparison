@@ -30,15 +30,22 @@ object RustLibrary {
     }
 
     @JvmStatic
-    external fun testUsingJni(aFirst: Int, aSecond: Double, bFirst: Int, bSecond: Double): Double
+    external fun initJni()
 
     @JvmStatic
-    fun testUsingNio(buffer: ByteBuffer, aFirst: Int, aSecond: Double, bFirst: Int, bSecond: Double): Double {
+    external fun testUsingJni(struct1: TheStruct, struct2: TheStruct, struct3: TheStruct, struct4: TheStruct): Double
+
+    @JvmStatic
+    fun testUsingNio(buffer: ByteBuffer, struct1: TheStruct, struct2: TheStruct, struct3: TheStruct, struct4: TheStruct): Double {
         buffer.clear()
-        buffer.putInt(0, aFirst)
-        buffer.putDouble(8, aSecond)
-        buffer.putInt(16, bFirst)
-        buffer.putDouble(24, bSecond)
+        buffer.putInt(0, struct1.first)
+        buffer.putDouble(8, struct1.second)
+        buffer.putInt(16, struct2.first)
+        buffer.putDouble(24, struct2.second)
+        buffer.putInt(32, struct3.first)
+        buffer.putDouble(40, struct3.second)
+        buffer.putInt(48, struct4.first)
+        buffer.putDouble(56, struct4.second)
         return testUsingNio(buffer)
     }
 

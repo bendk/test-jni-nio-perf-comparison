@@ -2,25 +2,87 @@ use std::{io::{Cursor, Read}, sync::OnceLock};
 
 use jni::{JNIEnv, objects::{JByteBuffer, JFieldID, JClass, JObject}, signature::{ReturnType, Primitive}};
 
+#[derive(Clone)]
 pub struct TheStruct {
     first: i32,
     second: f64,
 }
 
+static STRUCT_FIELD_IDS: OnceLock<(JFieldID, JFieldID)> = OnceLock::new();
+
+#[allow(clippy::missing_safety_doc)]
+#[unsafe(no_mangle)]
+pub unsafe extern "system" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_initJni(
+    mut env: JNIEnv,
+    _class: JClass,
+) {
+    let class = env.find_class("dev/gobley/test/jninioperfcomparison/TheStruct").unwrap();
+    let _ = STRUCT_FIELD_IDS.set((
+        env.get_field_id(&class, "first", "I").unwrap(),
+        env.get_field_id(&class, "second", "D").unwrap(),
+    ));
+}
 
 #[allow(clippy::missing_safety_doc)]
 #[unsafe(no_mangle)]
 pub unsafe extern "system" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_testUsingJni(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
-    a_first: i32,
-    a_second: f64,
-    b_first: i32,
-    b_second: f64,
+    struct1: JObject,
+    struct2: JObject,
+    struct3: JObject,
+    struct4: JObject,
 ) -> f64 {
+    let field_ids = STRUCT_FIELD_IDS.get().unwrap();
     calculate_result_from_structs(&[
-        TheStruct { first: a_first, second: a_second },
-        TheStruct { first: b_first, second: b_second },
+        TheStruct {
+            first: env.get_field_unchecked(
+                &struct1, 
+                field_ids.0,
+                ReturnType::Primitive(Primitive::Int),
+            ).unwrap().i().unwrap(),
+            second: env.get_field_unchecked(
+                &struct1, 
+                field_ids.1,
+                ReturnType::Primitive(Primitive::Double),
+            ).unwrap().d().unwrap(),
+        },
+        TheStruct {
+            first: env.get_field_unchecked(
+                &struct2, 
+                field_ids.0,
+                ReturnType::Primitive(Primitive::Int),
+            ).unwrap().i().unwrap(),
+            second: env.get_field_unchecked(
+                &struct2, 
+                field_ids.1,
+                ReturnType::Primitive(Primitive::Double),
+            ).unwrap().d().unwrap(),
+        },
+        TheStruct {
+            first: env.get_field_unchecked(
+                &struct3, 
+                field_ids.0,
+                ReturnType::Primitive(Primitive::Int),
+            ).unwrap().i().unwrap(),
+            second: env.get_field_unchecked(
+                &struct3, 
+                field_ids.1,
+                ReturnType::Primitive(Primitive::Double),
+            ).unwrap().d().unwrap(),
+        },
+        TheStruct {
+            first: env.get_field_unchecked(
+                &struct4, 
+                field_ids.0,
+                ReturnType::Primitive(Primitive::Int),
+            ).unwrap().i().unwrap(),
+            second: env.get_field_unchecked(
+                &struct4, 
+                field_ids.1,
+                ReturnType::Primitive(Primitive::Double),
+            ).unwrap().d().unwrap(),
+        },
     ])
 }
 
@@ -36,16 +98,14 @@ pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_t
         let buffer_capacity = env.get_direct_buffer_capacity(&structs).unwrap();
         std::slice::from_raw_parts(buffer_address, buffer_capacity)
     };
-    calculate_result_from_structs(&[
-        TheStruct {
-            first: i32::from_le_bytes(buffer[0..4].try_into().unwrap()),
-            second: f64::from_le_bytes(buffer[8..16].try_into().unwrap()),
-        },
-        TheStruct {
-            first: i32::from_le_bytes(buffer[16..20].try_into().unwrap()),
-            second: f64::from_le_bytes(buffer[24..32].try_into().unwrap()),
-        },
-    ])
+    unsafe {
+        calculate_result_from_structs(&[
+            std::mem::transmute::<&[u8; 16], &TheStruct>(&buffer[0..16].try_into().unwrap()).clone(),
+            std::mem::transmute::<&[u8; 16], &TheStruct>(&buffer[16..32].try_into().unwrap()).clone(),
+            std::mem::transmute::<&[u8; 16], &TheStruct>(&buffer[32..48].try_into().unwrap()).clone(),
+            std::mem::transmute::<&[u8; 16], &TheStruct>(&buffer[48..64].try_into().unwrap()).clone(),
+        ])
+    }
 }
 
 fn calculate_result_from_structs(structs: &[TheStruct]) -> f64 {
