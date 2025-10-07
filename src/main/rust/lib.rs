@@ -110,6 +110,38 @@ pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_t
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_testUsingNio2(
+    env: JNIEnv,
+    _class: JClass,
+    structs: JByteBuffer,
+) -> f64 {
+    let buffer: &[u8] = unsafe {
+        let buffer_address = env.get_direct_buffer_address(&structs).unwrap();
+        let buffer_capacity = env.get_direct_buffer_capacity(&structs).unwrap();
+        std::slice::from_raw_parts(buffer_address, buffer_capacity)
+    };
+    calculate_result_from_structs(&[
+        TheStruct {
+            first: i32::from_ne_bytes(buffer[0..4].try_into().unwrap()),
+            second: f64::from_ne_bytes(buffer[8..16].try_into().unwrap()),
+        },
+        TheStruct {
+            first: i32::from_ne_bytes(buffer[16..20].try_into().unwrap()),
+            second: f64::from_ne_bytes(buffer[24..32].try_into().unwrap()),
+        },
+        TheStruct {
+            first: i32::from_ne_bytes(buffer[32..36].try_into().unwrap()),
+            second: f64::from_ne_bytes(buffer[40..48].try_into().unwrap()),
+        },
+        TheStruct {
+            first: i32::from_ne_bytes(buffer[48..52].try_into().unwrap()),
+            second: f64::from_ne_bytes(buffer[56..64].try_into().unwrap()),
+        },
+    ])
+}
+
 fn calculate_result_from_structs(structs: &[TheStruct]) -> f64 {
     structs.iter().map(|s| s.second.powi(s.first)).sum()
 }

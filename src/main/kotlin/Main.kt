@@ -31,13 +31,13 @@ fun test(repeatTimes: Int) {
         struct3.second.pow(struct3.first) +
         struct4.second.pow(struct4.first)
     )
-    testUsing("jni", repeatTimes, groundTruth) {
-        RustLibrary.testUsingJni(struct1, struct2, struct3, struct4)
-    }
     val buffer = ByteBuffer.allocateDirect(64)
     buffer.order(ByteOrder.LITTLE_ENDIAN)
     testUsing("nio", repeatTimes, groundTruth) {
         RustLibrary.testUsingNio(buffer, struct1, struct2, struct3, struct4)
+    }
+    testUsing("nio2", repeatTimes, groundTruth) {
+        RustLibrary.testUsingNio2(buffer, struct1, struct2, struct3, struct4)
     }
     println()
 }
