@@ -45,22 +45,32 @@ object RustLibrary {
         return testUsingNio(buffer)
     }
 
-    fun testUsingNio2(buffer: ByteBuffer, struct1: TheStruct, struct2: TheStruct, struct3: TheStruct, struct4: TheStruct): Double {
+    fun testUsingNio2(
+        buffer: ByteBuffer,
+        struct1: TheStruct,
+        struct2: TheStruct,
+        struct3: TheStruct,
+        struct4: TheStruct,
+        pos: Int
+    ): Double {
         buffer.clear()
-        buffer.putInt(0, struct1.first)
-        buffer.putDouble(8, struct1.second)
-        buffer.putInt(16, struct2.first)
-        buffer.putDouble(24, struct2.second)
-        buffer.putInt(32, struct3.first)
-        buffer.putDouble(40, struct3.second)
-        buffer.putInt(48, struct4.first)
-        buffer.putDouble(56, struct4.second)
-        return testUsingNio2(buffer)
+        buffer.putInt(pos + 0, struct1.first)
+        buffer.putDouble(pos + 8, struct1.second)
+        buffer.putInt(pos + 16, struct2.first)
+        buffer.putDouble(pos + 24, struct2.second)
+        buffer.putInt(pos + 32, struct3.first)
+        buffer.putDouble(pos + 40, struct3.second)
+        buffer.putInt(pos + 48, struct4.first)
+        buffer.putDouble(pos + 56, struct4.second)
+        return testUsingNio2()
     }
 
     @JvmStatic
     private external fun testUsingNio(structs: Buffer): Double
 
     @JvmStatic
-    private external fun testUsingNio2(structs: Buffer): Double
+    private external fun testUsingNio2(): Double
+
+    @JvmStatic
+    external fun getStackBuffer(): ByteBuffer
 }

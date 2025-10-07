@@ -3,6 +3,7 @@ package dev.gobley.test.jninioperfcomparison
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
@@ -11,14 +12,25 @@ import java.nio.ByteOrder
 
 fun main() {
     RustLibrary.initJni()
+    val buffer = ByteBuffer.allocateDirect(1024)
+    val buffer2 = RustLibrary.getStackBuffer()
+    buffer.order(ByteOrder.LITTLE_ENDIAN)
+    buffer2.order(ByteOrder.LITTLE_ENDIAN)
     // Warming up
-    test(10)
+    buffer2.putLong(0, 100)
+    test(10, buffer, buffer2, 100)
     for (repeatTimes in 1_000_000..10_000_000 step 1_000_000) {
-        test(repeatTimes)
+        // move buffer2 to a random position, this simulates the "stack pointer" being at different
+        // positions
+        val pos = Random.nextLong(5, 10) * 8
+        buffer2.putLong(0, pos)
+
+        test(repeatTimes, buffer, buffer2, pos.toInt())
+
     }
 }
 
-fun test(repeatTimes: Int) {
+fun test(repeatTimes: Int, buffer: ByteBuffer, buffer2: ByteBuffer, buffer2Pos: Int) {
     println(":::::::::: Test with repeatTimes = $repeatTimes ::::::::::")
     val struct1 = TheStruct.random()
     val struct2 = TheStruct.random()
@@ -31,13 +43,11 @@ fun test(repeatTimes: Int) {
         struct3.second.pow(struct3.first) +
         struct4.second.pow(struct4.first)
     )
-    val buffer = ByteBuffer.allocateDirect(64)
-    buffer.order(ByteOrder.LITTLE_ENDIAN)
     testUsing("nio", repeatTimes, groundTruth) {
         RustLibrary.testUsingNio(buffer, struct1, struct2, struct3, struct4)
     }
     testUsing("nio2", repeatTimes, groundTruth) {
-        RustLibrary.testUsingNio2(buffer, struct1, struct2, struct3, struct4)
+        RustLibrary.testUsingNio2(buffer2, struct1, struct2, struct3, struct4, buffer2Pos)
     }
     println()
 }

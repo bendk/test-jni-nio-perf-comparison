@@ -8,6 +8,12 @@ pub struct TheStruct {
     second: f64,
 }
 
+// A "stack", that we manage ourselves and use to pass structs across the FFI
+//
+// Note: I could only get a leaked vec to work, a static array causes a segfault (maybe because the
+// memory is flagged read-only?).
+static STACK_BUFFER: OnceLock<&'static [u8]> = OnceLock::new();
+
 static STRUCT_FIELD_IDS: OnceLock<(JFieldID, JFieldID)> = OnceLock::new();
 
 #[allow(clippy::missing_safety_doc)]
@@ -112,16 +118,28 @@ pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_t
 
 #[allow(clippy::missing_safety_doc)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_testUsingNio2(
-    env: JNIEnv,
+pub unsafe extern "system" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_getStackBuffer(
+    mut env: JNIEnv,
     _class: JClass,
-    structs: JByteBuffer,
-) -> f64 {
-    let buffer: &[u8] = unsafe {
-        let buffer_address = env.get_direct_buffer_address(&structs).unwrap();
-        let buffer_capacity = env.get_direct_buffer_capacity(&structs).unwrap();
-        std::slice::from_raw_parts(buffer_address, buffer_capacity)
+) -> jni::sys::jobject {
+    let buf: Vec<u8> = vec![0; 1024];
+    let leaked_slice = buf.leak();
+    STACK_BUFFER.set(leaked_slice).unwrap();
+    let buf = unsafe {
+        env.new_direct_byte_buffer(leaked_slice.as_ptr().cast_mut(), 1024).unwrap()
     };
+    buf.into_raw()
+}
+
+#[allow(clippy::missing_safety_doc)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn Java_dev_gobley_test_jninioperfcomparison_RustLibrary_testUsingNio2(
+    _env: JNIEnv,
+    _class: JClass,
+) -> f64 {
+    let buffer: &[u8] = STACK_BUFFER.get().unwrap();
+    let pos = i64::from_ne_bytes(buffer[0..8].try_into().unwrap()) as usize;
+    let buffer = &buffer[pos..];
     calculate_result_from_structs(&[
         TheStruct {
             first: i32::from_ne_bytes(buffer[0..4].try_into().unwrap()),
