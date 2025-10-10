@@ -1,59 +1,79 @@
-# Performance comparision of not sending the buffer in every call
+# Performance comparision different ways to pass arguments
 
-Result: Not sending the buffer improves performance
+- `jni` uses "normal" JNI calls.
+- `nio` uses JNI calls, but with 0 arguments and no return values.
+  Instead, the code sets up a shared `ByteBuffer` to pass arguments with.
+  This buffer is essentially a manually managed stack.
+- `jna-nio` does the same thing, but using JNA direct mapping
 
-- `nio` uses the code from before, which sends a `ByteBuffer` argument for each call
-- `nio2` avoids the `ByteBuffer` argument by setting it once at startup time.  It also tries to
-simulate how this would work in the real world by defining a "stack", where the current stack
-position are stred in the first 8 bytes.
+`jni` performed the fastest
+`nio` was only slightly behind `jni`.
+`jna-nio` was significantly behind `jna`
 
-`nio2` performed better, I think this is partly because it doesn't need to send the `ByteBuffer`
-argument but also because we don't have to call `env.get_direct_buffer_address` and
-`env.get_direct_buffer_capacity`.
+My (BDK) feeling is that we should pursue the `nio` route.  For a slight decrease in performance, we
+get a major win in simplicity.  Having all signatures be `Fn() -> ()`, simplifies a lot of things.
+It also means we can probably create a scaffolding layer that Kotlin/Java/Python/JS can all share,
+and keep the language-specific stuff to an absolute minimum.  Also, the `nio` route performed
+significantly better when dealing with structs rather than primitive arguments.
 
-On my machine:
+I'm thinking that it's worth it to switch to JNI somehow over the JNA route, since it results in
+significant preformance gains.
+
+BTW, when I run the current benchmarks, I see ~22us for a kotlin call.  This is not completely
+apples-to-apples, but it's clear that any of these approaches will be much faster than the current
+system.  I also believe that this performance difference increases when records and enums are
+involved.
+
+Results my machine:
 
 ```
 :::::::::: Test with repeatTimes = 1000000 ::::::::::
-nio: mean = 70.455725 ns, stddev = 118.35507506515376 ns
-nio2: mean = 70.827754 ns, stddev = 8279.39721239206 ns
+jni: mean = 38.532333 ns, stddev = 2466.985576446869 ns
+nio: mean = 47.597483 ns, stddev = 284.50683722421365 ns
+jna-nio: mean = 100.24607 ns, stddev = 237.57085014298437 ns
 
 :::::::::: Test with repeatTimes = 2000000 ::::::::::
-nio: mean = 62.7488685 ns, stddev = 26.794918743784844 ns
-nio2: mean = 44.280129 ns, stddev = 25.07001303824103 ns
+jni: mean = 33.8936685 ns, stddev = 25.35427467125202 ns
+nio: mean = 42.810357 ns, stddev = 147.23586735813916 ns
+jna-nio: mean = 86.7266135 ns, stddev = 198.7638950772463 ns
 
 :::::::::: Test with repeatTimes = 3000000 ::::::::::
-nio: mean = 63.122681 ns, stddev = 27.04163607713918 ns
-nio2: mean = 41.208624 ns, stddev = 19.731948021148952 ns
+jni: mean = 40.94717633333333 ns, stddev = 146.77964417200022 ns
+nio: mean = 56.72405233333333 ns, stddev = 27467.423739141363 ns
+jna-nio: mean = 78.61947833333333 ns, stddev = 34.46538820706429 ns
 
 :::::::::: Test with repeatTimes = 4000000 ::::::::::
-nio: mean = 62.79826575 ns, stddev = 30.69965794608892 ns
-nio2: mean = 40.7110895 ns, stddev = 19.637297236305873 ns
+jni: mean = 44.5093275 ns, stddev = 11220.125539812057 ns
+nio: mean = 37.51436675 ns, stddev = 100.98953455883195 ns
+jna-nio: mean = 82.1094655 ns, stddev = 5527.79297989799 ns
 
 :::::::::: Test with repeatTimes = 5000000 ::::::::::
-nio: mean = 63.3150262 ns, stddev = 405.8374367812536 ns
-nio2: mean = 42.6128214 ns, stddev = 21.928530204686318 ns
+jni: mean = 34.6896766 ns, stddev = 18.631050222333986 ns
+nio: mean = 44.0245922 ns, stddev = 313.361844114639 ns
+jna-nio: mean = 78.8225686 ns, stddev = 29.721957120776693 ns
 
 :::::::::: Test with repeatTimes = 6000000 ::::::::::
-nio: mean = 63.40525316666667 ns, stddev = 22.951453231250007 ns
-nio2: mean = 42.4046745 ns, stddev = 20.629978649279618 ns
+jni: mean = 38.088654 ns, stddev = 6740.068070091855 ns
+nio: mean = 40.51859283333334 ns, stddev = 5866.556687654979 ns
+jna-nio: mean = 88.32087516666667 ns, stddev = 163.2923409282288 ns
 
 :::::::::: Test with repeatTimes = 7000000 ::::::::::
-nio: mean = 63.773667 ns, stddev = 299.4293644136117 ns
-nio2: mean = 41.56246228571428 ns, stddev = 89.96852393147313 ns
+jni: mean = 34.52556728571429 ns, stddev = 19.60341186032824 ns
+nio: mean = 41.38253942857143 ns, stddev = 10635.5606706582 ns
+jna-nio: mean = 83.38344214285715 ns, stddev = 8203.829069728612 ns
 
 :::::::::: Test with repeatTimes = 8000000 ::::::::::
-nio: mean = 63.45844775 ns, stddev = 105.39012803794074 ns
-nio2: mean = 41.554047125 ns, stddev = 15.846937185474804 ns
+jni: mean = 34.53803875 ns, stddev = 69.60842925440366 ns
+nio: mean = 37.120244375 ns, stddev = 18.51628532983105 ns
+jna-nio: mean = 80.129109 ns, stddev = 4550.571768203493 ns
 
 :::::::::: Test with repeatTimes = 9000000 ::::::::::
-nio: mean = 63.100746111111114 ns, stddev = 22.632153628946057 ns
-nio2: mean = 41.50981355555555 ns, stddev = 15.88294342026826 ns
+jni: mean = 37.39180511111111 ns, stddev = 9158.964454301542 ns
+nio: mean = 44.79688411111111 ns, stddev = 6569.902422806481 ns
+jna-nio: mean = 79.55691911111111 ns, stddev = 53.536192270482175 ns
 
 :::::::::: Test with repeatTimes = 10000000 ::::::::::
-nio: mean = 63.0169447 ns, stddev = 410.4743833025464 ns
-nio2: mean = 41.1557025 ns, stddev = 65.51080168898153 ns
+jni: mean = 38.7813579 ns, stddev = 12003.784356838858 ns
+nio: mean = 41.7472073 ns, stddev = 10090.22763102756 ns
+jna-nio: mean = 84.4977933 ns, stddev = 122.34571706129732 ns
 ```
-
-
-

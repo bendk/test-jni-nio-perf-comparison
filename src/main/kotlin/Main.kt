@@ -12,17 +12,19 @@ import java.nio.ByteOrder
 
 fun main() {
     RustLibrary.initJni()
-    val buffer = ByteBuffer.allocateDirect(1024)
-    val buffer2 = RustLibrary.getStackBuffer()
+    val buffer = RustLibrary.getStackBuffer()
+    val buffer2 = RustLibraryJna.jnaNioGetStackPointer().getByteBuffer(0, 1024)
     buffer.order(ByteOrder.LITTLE_ENDIAN)
     buffer2.order(ByteOrder.LITTLE_ENDIAN)
     // Warming up
+    buffer.putLong(0, 100)
     buffer2.putLong(0, 100)
     test(10, buffer, buffer2, 100)
     for (repeatTimes in 1_000_000..10_000_000 step 1_000_000) {
-        // move buffer2 to a random position, this simulates the "stack pointer" being at different
+        // move buffer to a random position, this simulates the "stack pointer" being at different
         // positions
         val pos = Random.nextLong(5, 10) * 8
+        buffer.putLong(0, pos)
         buffer2.putLong(0, pos)
 
         test(repeatTimes, buffer, buffer2, pos.toInt())
@@ -32,22 +34,20 @@ fun main() {
 
 fun test(repeatTimes: Int, buffer: ByteBuffer, buffer2: ByteBuffer, buffer2Pos: Int) {
     println(":::::::::: Test with repeatTimes = $repeatTimes ::::::::::")
-    val struct1 = TheStruct.random()
-    val struct2 = TheStruct.random()
-    val struct3 = TheStruct.random()
-    val struct4 = TheStruct.random()
+    val a = Random.nextDouble(10.0, 50.0)
+    val b = Random.nextInt(1, 3)
+    val c = Random.nextDouble(10.0, 50.0)
+    val d = Random.nextInt(1, 3)
 
-    val groundTruth = (
-        struct1.second.pow(struct1.first) +
-        struct2.second.pow(struct2.first) +
-        struct3.second.pow(struct3.first) +
-        struct4.second.pow(struct4.first)
-    )
-    testUsing("nio", repeatTimes, groundTruth) {
-        RustLibrary.testUsingNio(buffer, struct1, struct2, struct3, struct4)
+    val groundTruth = (a.pow(b) + c.pow(d))
+    testUsing("jni", repeatTimes, groundTruth) {
+        RustLibrary.testUsingJni(a, b, c, d)
     }
-    testUsing("nio2", repeatTimes, groundTruth) {
-        RustLibrary.testUsingNio2(buffer2, struct1, struct2, struct3, struct4, buffer2Pos)
+    testUsing("nio", repeatTimes, groundTruth) {
+        RustLibrary.testUsingNio(buffer, a, b, c, d, buffer2Pos)
+    }
+    testUsing("jna-nio", repeatTimes, groundTruth) {
+        RustLibraryJna.testUsingNio(buffer2, a, b, c, d, buffer2Pos)
     }
     println()
 }

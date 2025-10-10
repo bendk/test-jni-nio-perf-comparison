@@ -19,6 +19,10 @@ kotlin {
     jvmToolchain(17)
 }
 
+dependencies {
+    implementation("net.java.dev.jna:jna:5.17.0")
+}
+
 application {
     mainClass = "dev.gobley.test.jninioperfcomparison.MainKt"
 }
